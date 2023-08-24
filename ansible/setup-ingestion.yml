@@ -1,0 +1,43 @@
+- become: yes
+  hosts: all
+  name: setup-ingestion-server
+  user: ubuntu
+  tasks:
+    - name: Update all packages
+      apt:
+        upgrade: yes
+        update_cache: yes
+        force_apt_get: true
+
+    - name: Import influxDB keys
+      apt_key:
+        url: https://repos.influxdata.com/influxdata-archive_compat.key
+        state: present
+
+    - name: Add influxDB repo
+      apt_repository:
+        repo: deb https://repos.influxdata.com/debian stable main
+        state: present
+
+    - name: Install requirements
+      apt:
+        update_cache: yes
+        pkg:
+          - telegraf
+
+    - name: Copy main telegraf config
+      copy:
+        src: configuration/telegraf/telegraf.conf
+        dest: /etc/telegraf/telegraf.conf
+
+    - name: Copy telegraf environment variables
+      copy:
+        src: configuration/telegraf/environment_file
+        dest: /etc/default/telegraf
+        mode: '0440'
+
+    - name: Start telegraf
+      systemd:
+        name: telegraf
+        state: restarted
+        enabled: yes

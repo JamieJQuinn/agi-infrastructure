@@ -1,0 +1,46 @@
+- become: yes
+  hosts: all
+  name: setup-grafana-server
+  user: ubuntu
+  tasks:
+    - name: Update all packages
+      apt:
+        upgrade: yes
+        update_cache: yes
+        force_apt_get: true
+
+    - name: Install NFS
+      apt:
+        update_cache: yes
+        pkg:
+          - nfs-common
+
+    - name: Configure EFS storage
+      ansible.posix.mount:
+        src: "{{ efs_mountpoint }}:/"
+        path: /var/lib/grafana
+        state: mounted
+        fstype: nfs4
+        opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
+
+    - name: Import Grafana keys
+      apt_key:
+        url: https://packages.grafana.com/gpg.key
+        state: present
+
+    - name: Add Grafana repo
+      apt_repository:
+        repo: deb https://packages.grafana.com/enterprise/deb stable main
+        state: present
+
+    - name: Install Grafana
+      apt:
+        update_cache: yes
+        pkg:
+          - grafana-enterprise
+
+    - name: Make sure Grafana is running
+      ansible.builtin.systemd:
+        state: started
+        enabled: yes
+        name: grafana-server
