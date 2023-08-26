@@ -24,6 +24,41 @@
         update_cache: yes
         pkg:
           - telegraf
+          - docker
+          - docker.io
+          - certbot
+
+    - name: Pull Mosquitto image
+      community.docker.docker_image:
+        name: eclipse-mosquitto
+        source: pull
+
+    - name: Create mosquitto dir
+      file:
+        path: /mosquitto
+        state: directory
+
+    - name: Copy Mosquitto config
+      copy:
+        src: configuration/mosquitto/mosquitto.conf
+        dest: /mosquitto/mosquitto.conf
+
+    - name: Copy mosquitto passwd file
+      copy:
+        src: configuration/mosquitto/mosquitto_passwd
+        dest: /mosquitto/mosquitto_passwd
+        mode: '0440'
+
+    - name: Start Mosquitto docker
+      community.docker.docker_container:
+        name: mosquitto
+        image: eclipse-mosquitto
+        state: started
+        volumes:
+          - /mosquitto/:/mosquitto/config/:rw
+        ports:
+          - "1883:1883"
+          - "9001:9001"
 
     - name: Copy main telegraf config
       copy:

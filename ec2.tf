@@ -43,6 +43,16 @@ resource "aws_eip" "ingestion" {
   }
 }
 
+resource "aws_eip_association" "ingestion" {
+  instance_id   = aws_instance.ingestion.id
+  allocation_id = aws_eip.ingestion.id
+}
+
+output "telegraf_ip" {
+  value       = aws_eip_association.ingestion.public_ip
+  description = "IP of Telegraf server"
+}
+
 resource "aws_security_group" "ingestion" {
   name = "ingestion"
   vpc_id      = "${aws_vpc.main.id}"
@@ -68,14 +78,15 @@ resource "aws_security_group" "ingestion" {
 }
 
 resource "aws_key_pair" "main" {
-  key_name   = "main"
+  key_name   = "agi"
   public_key = file(var.pub_key)
+
+  tags = {
+    environment = "${var.environment}"
+    project = "${var.project}"
+  }
 }
 
-output "telegraf_ip" {
-  value       = aws_eip.ingestion.public_ip
-  description = "IP of Telegraf server"
-}
 
 resource "aws_instance" "grafana_server" {
   ami = "${var.ec2_ami}"
@@ -131,7 +142,6 @@ resource "aws_security_group" "grafana_server" {
 }
 
 resource "aws_eip" "grafana_server" {
-  instance = aws_instance.grafana_server.id
   vpc      = true
 
   tags = {
@@ -145,7 +155,12 @@ resource "aws_eip" "grafana_server" {
   }
 }
 
+resource "aws_eip_association" "grafana_server" {
+  instance_id   = aws_instance.grafana_server.id
+  allocation_id = aws_eip.grafana_server.id
+}
+
 output "grafana_ip" {
-  value       = aws_eip.grafana_server.public_ip
+  value       = aws_eip_association.grafana_server.public_ip
   description = "IP of Grafana server"
 }
