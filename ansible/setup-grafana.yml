@@ -14,6 +14,7 @@
         update_cache: yes
         pkg:
           - nfs-common
+          - certbot
 
     - name: Configure EFS storage
       ansible.posix.mount:
